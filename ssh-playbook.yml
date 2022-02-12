@@ -1,0 +1,15 @@
+---
+- name: Configure SSH daemon to accept only keys
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure PasswordAuthentication is set to no in sshd_config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: ^(# *)?PasswordAuthentication
+        line: PasswordAuthentication no
+
+    - name: Restart SSH daemon to reload changes
+      service:
+        name: sshd
+        state: restarted
