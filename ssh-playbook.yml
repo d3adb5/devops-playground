@@ -1,9 +1,9 @@
 ---
-- name: Configure SSH daemon to accept only keys
+- name: Ensure basic SSH configuration is present
   hosts: all
   become: yes
   tasks:
-    - name: Ensure PasswordAuthentication is set to no in sshd_config
+    - name: Ensure password authentication is disabled
       lineinfile:
         path: /etc/ssh/sshd_config
         regexp: ^(# *)?PasswordAuthentication
