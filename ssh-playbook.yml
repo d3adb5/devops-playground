@@ -8,10 +8,10 @@
         path: /etc/ssh/sshd_config
         regexp: ^(# *)?PasswordAuthentication
         line: PasswordAuthentication no
-      register: sshd_config
+      notify: Restart SSH daemon
 
-    - name: Restart SSH daemon to reload changes
+  handlers:
+    - name: Restart SSH daemon
       service:
         name: sshd
         state: restarted
-      when: sshd_config.changed
