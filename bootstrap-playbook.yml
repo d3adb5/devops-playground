@@ -1,0 +1,59 @@
+---
+- name: Set up servers for Ansible
+  hosts: bootstrap
+  become: yes
+  vars:
+    ssh_user: "{{ lookup('env', 'ANSIBLE_SSH_USER') }}"
+    ssh_port: "{{ lookup('env', 'ANSIBLE_SSH_PORT') }}"
+    ssh_key:  "{{ lookup('env', 'ANSIBLE_SSH_KEY') }}"
+  tasks:
+    - name: Ensure ansible user exists
+      user:
+        name: "{{ ssh_user }}"
+        home: "/var/lib/{{ ssh_user }}"
+        system: yes
+
+    - name: Ensure packages are up to date (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Ensure sudo package is installed (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        name: sudo
+
+    - name: Ensure ansible user can become root w/o passwd
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ ssh_user }} ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+
+    - name: Ensure SSH pubkey is authorized for configured user
+      authorized_key:
+        user: "{{ ssh_user }}"
+        key: "{{ ssh_key }}"
+
+    - name: Ensure SSH daemon listens on configured port
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: ^Port
+        line: "Port {{ ssh_port }}"
+      notify: Restart SSH daemon
+
+    - name: Remove host from bootstrap group
+      shell: |
+        vars='{"ansible_user":"{{ ssh_user }}","ansible_port":{{ ssh_port }}}'
+        addExpr=".all.hosts.{{ inventory_hostname }} += $vars"
+        delExpr='del(.all.children.bootstrap.hosts.{{ inventory_hostname }})'
+        yq -y "$addExpr" {{ inventory_file }} > {{ inventory_file }}.tmp
+        yq -y "$delExpr" {{ inventory_file }}.tmp > {{ inventory_file }}
+      delegate_to: 127.0.0.1
+      become: no
+
+  handlers:
+    - name: Restart SSH daemon
+      service:
+        name: sshd
+        state: restarted
