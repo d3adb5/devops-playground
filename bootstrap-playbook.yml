@@ -49,6 +49,7 @@
         delExpr='del(.all.children.bootstrap.hosts.{{ inventory_hostname }})'
         yq -y "$addExpr" {{ inventory_file }} > {{ inventory_file }}.tmp
         yq -y "$delExpr" {{ inventory_file }}.tmp > {{ inventory_file }}
+        rm {{ inventory_file }}.tmp
       delegate_to: 127.0.0.1
       become: no
 
