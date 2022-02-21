@@ -1,0 +1,39 @@
+---
+- name: Ensure Docker Engine is installed
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure dependencies are installed (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+        update_cache: yes
+
+    - name: Ensure Docker PGP key is in APT keyring
+      when: ansible_distribution == "Debian"
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+
+    - name: Ensure Docker repository is present for APT
+      when: ansible_distribution == "Debian"
+      apt_repository:
+        repo: deb https://download.docker.com/linux/debian bullseye stable
+
+    - name: Ensure Docker packages are installed
+      when: ansible_distribution == "Debian"
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+
+    - name: Ensure the Docker service is enabled and started
+      service:
+        name: docker
+        state: started
+        enabled: yes
