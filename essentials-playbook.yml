@@ -52,12 +52,12 @@
         executable: pip3
         name: beets
 
-- name: Ensure Mosh is installed
+- name: Ensure essential tools are installed
   hosts: all
   become: yes
   tasks:
-    - name: Ensure 'mosh' is installed (Debian)
+    - name: Ensure essential tools are installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name: mosh
+        name: mosh, tree, tmux, neovim
         update_cache: yes
