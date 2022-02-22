@@ -27,10 +27,7 @@
     - name: Ensure Docker packages are installed
       when: ansible_distribution == "Debian"
       apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
+        name: docker-ce, docker-ce-cli, containerd.io
 
     - name: Ensure the Docker service is enabled and started
       service:
