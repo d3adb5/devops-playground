@@ -54,3 +54,13 @@
       pip:
         executable: pip3
         name: beets
+
+- name: Ensure Mosh is installed
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure 'mosh' is installed (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        name: mosh
+        update_cache: yes
