@@ -30,6 +30,13 @@
         line: "{{ ssh_user }} ALL=(ALL) NOPASSWD:ALL"
         validate: "visudo -cf %s"
 
+    - name: Ensure sudo group can become root w/o passwd
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^%sudo'
+        line: "%sudo ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+
     - name: Ensure SSH pubkey is authorized for configured user
       authorized_key:
         user: "{{ ssh_user }}"
