@@ -37,6 +37,7 @@
       with_items: "{{ desired_users }}"
       user:
         name: "{{ item }}"
+        shell: /bin/zsh
 
     - name: Ensure leftover users are removed
       with_items: "{{ current_users | difference(desired_users) }}"
