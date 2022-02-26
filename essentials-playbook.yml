@@ -22,6 +22,7 @@
           - curl
           - gnupg-agent
           - software-properties-common
+        state: latest
         update_cache: yes
 
     - name: Ensure Docker PGP key is in APT keyring
@@ -38,6 +39,7 @@
       when: ansible_distribution == "Debian"
       apt:
         name: docker-ce, docker-ce-cli, containerd.io
+        state: latest
 
     - name: Ensure the Docker service is enabled and started
       service:
@@ -52,14 +54,14 @@
     - name: Ensure Python 3 is installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name:
-          - python3
-          - python3-pip
+        name: python3, python3-pip
+        state: latest
         update_cache: yes
 
     - name: Ensure Beets is installed globally
       pip:
         executable: pip3
+        state: latest
         name: beets
 
 - name: Ensure essential tools are installed
@@ -70,4 +72,5 @@
       when: ansible_distribution == "Debian"
       apt:
         name: zsh, mosh, tree, tmux, neovim, rsync, ncdu, htop, git
+        state: latest
         update_cache: yes
