@@ -37,6 +37,7 @@
       with_items: "{{ desired_users }}"
       user:
         name: "{{ item }}"
+        shell: /bin/zsh
 
     - name: Ensure leftover users are removed
       with_items: "{{ current_users | difference(desired_users) }}"
@@ -50,3 +51,33 @@
       authorized_key:
         user: "{{ item }}"
         key: "{{ lookup('file', 'users/{{ item }}.pub') }}"
+
+    - name: Ensure desired users have global zsh config
+      block:
+        - name: Ensure dotfiles clone is present in /opt/dotfiles
+          git:
+            dest: /opt/dotfiles
+            repo: https://github.com/d3adb5/dotfiles
+
+        - name: Ensure link to global zshrc exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.zshrc
+            src: /opt/dotfiles/zsh/zshrc
+            state: link
+
+        - name: Ensure .config directory exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.config
+            owner: "{{ item }}"
+            group: "{{ item }}"
+            mode: 0755
+            state: directory
+
+        - name: Ensure link to global zsh conf dir exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.config/zsh
+            src: /opt/dotfiles/zsh/conf.d
+            state: link
