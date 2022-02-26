@@ -16,12 +16,7 @@
     - name: Ensure dependencies are installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg-agent
-          - software-properties-common
+        name: ca-certificates, curl, gpg-agent, software-properties-common
         state: latest
         update_cache: yes
 
