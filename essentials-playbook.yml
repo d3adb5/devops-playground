@@ -1,4 +1,14 @@
 ---
+- name: Ensure all packages are up to date
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update all packages (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        update_cache: yes
+        upgrade: full
+
 - name: Ensure Docker Engine is installed
   hosts: all
   become: yes
