@@ -1,4 +1,14 @@
 ---
+- name: Ensure all packages are up to date
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update all packages (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        update_cache: yes
+        upgrade: full
+
 - name: Ensure Docker Engine is installed
   hosts: all
   become: yes
@@ -6,12 +16,8 @@
     - name: Ensure dependencies are installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg-agent
-          - software-properties-common
+        name: ca-certificates, curl, gpg-agent, software-properties-common
+        state: latest
         update_cache: yes
 
     - name: Ensure Docker PGP key is in APT keyring
@@ -28,12 +34,29 @@
       when: ansible_distribution == "Debian"
       apt:
         name: docker-ce, docker-ce-cli, containerd.io
+        state: latest
 
     - name: Ensure the Docker service is enabled and started
       service:
         name: docker
         state: started
         enabled: yes
+
+- name: Ensure Docker Compose (V1) is installed
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure Python 3 is installed (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        name: python3, python3-pip
+        state: latest
+        update_cache: yes
+
+    - name: Ensure docker-compose is installed through pip
+      pip:
+        name: docker-compose
+        state: latest
 
 - name: Ensure Beets is installed
   hosts: storage
@@ -42,14 +65,14 @@
     - name: Ensure Python 3 is installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name:
-          - python3
-          - python3-pip
+        name: python3, python3-pip
+        state: latest
         update_cache: yes
 
     - name: Ensure Beets is installed globally
       pip:
         executable: pip3
+        state: latest
         name: beets
 
 - name: Ensure essential tools are installed
@@ -59,5 +82,6 @@
     - name: Ensure essential tools are installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name: mosh, tree, tmux, neovim
+        name: zsh, mosh, tree, tmux, neovim, rsync, ncdu, htop, git
+        state: latest
         update_cache: yes
