@@ -82,6 +82,6 @@
     - name: Ensure essential tools are installed (Debian)
       when: ansible_distribution == "Debian"
       apt:
-        name: zsh, mosh, tree, tmux, neovim, rsync, ncdu, htop, git
+        name: zsh, mosh, tree, tmux, neovim, rsync, ncdu, htop, git, tmuxinator
         state: latest
         update_cache: yes
