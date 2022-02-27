@@ -58,6 +58,13 @@
         line: "%sudo ALL=(ALL) NOPASSWD:ALL"
         validate: "visudo -cf %s"
 
+    - name: Ensure sudo preserves SSH_AUTH_SOCK
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^Defaults>root'
+        line: "Defaults>root env_keep+=SSH_AUTH_SOCK"
+        validate: "visudo -cf %s"
+
     - name: Ensure SSH pubkey is authorized for configured user
       authorized_key:
         user: "{{ ssh_user }}"
