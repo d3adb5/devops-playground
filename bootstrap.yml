@@ -24,6 +24,27 @@
       apt:
         name: sudo
 
+    - name: Ensure firewall is activated and SSH enabled
+      block:
+        - name: Ensure firewalld is installed (Debian)
+          when: ansible_distribution == "Debian"
+          apt:
+            name: firewalld
+            state: latest
+
+        - name: Ensure configured SSH port is open through firewalld
+          firewalld:
+            port: '{{ ssh_port }}/tcp'
+            permanent: true
+            immediate: true
+            state: enabled
+
+        - name: Ensure firewalld service is enabled & started
+          service:
+            name: firewalld
+            enabled: true
+            state: started
+
     - name: Ensure ansible user can become root w/o passwd
       lineinfile:
         path: /etc/sudoers
