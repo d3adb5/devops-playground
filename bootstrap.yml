@@ -80,6 +80,7 @@
         rm {{ inventory_file }}.tmp
       delegate_to: 127.0.0.1
       become: no
+      throttle: 1
 
   handlers:
     - name: Restart SSH daemon
