@@ -85,3 +85,10 @@
         name: zsh, mosh, tree, tmux, neovim, rsync, ncdu, htop, git, tmuxinator
         state: latest
         update_cache: yes
+
+    - name: Ensure mosh's UDP ports are open (firewalld)
+      firewalld:
+        port: 60000-61000/udp
+        permanent: true
+        immediate: true
+        state: enabled
