@@ -52,7 +52,7 @@
         user: "{{ item }}"
         key: "{{ lookup('file', 'users/{{ item }}.pub') }}"
 
-    - name: Ensure desired users have global zsh config
+    - name: Ensure desired users have global tooling config
       block:
         - name: Ensure dotfiles clone is present in /opt/dotfiles
           git:
@@ -80,4 +80,32 @@
           file:
             path: /home/{{ item }}/.config/zsh
             src: /opt/dotfiles/zsh/conf.d
+            state: link
+
+        - name: Ensure TPM clone is present in /opt/tpm
+          git:
+            dest: /opt/tpm
+            repo: https://github.com/tmux-plugins/tpm
+
+        - name: Ensure link to global tmux.conf exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.tmux.conf
+            src: /opt/dotfiles/tmux/tmux.conf
+            state: link
+
+        - name: Ensure .tmux/plugins directory exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.tmux/plugins
+            owner: "{{ item }}"
+            group: "{{ item }}"
+            mode: 0755
+            state: directory
+
+        - name: Ensure link to global TPM clone exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.tmux/plugins/tpm
+            src: /opt/tpm
             state: link
