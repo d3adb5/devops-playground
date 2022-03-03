@@ -70,12 +70,42 @@
         user: "{{ ssh_user }}"
         key: "{{ ssh_key }}"
 
-    - name: Ensure SSH daemon listens on configured port
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: ^Port
-        line: "Port {{ ssh_port }}"
-      notify: Restart SSH daemon
+    - name: Ensure basic SSH configuration is present
+      block:
+        - name: Ensure SSH daemon listens on configured port
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^Port
+            line: "Port {{ ssh_port }}"
+          notify: Restart SSH daemon
+
+        - name: Ensure password authentication is disabled
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?PasswordAuthentication
+            line: PasswordAuthentication no
+          notify: Restart SSH daemon
+
+        - name: Ensure users with empty passwords can't log in
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?PermitEmptyPasswords
+            line: PermitEmptyPasswords no
+          notify: Restart SSH daemon
+
+        - name: Ensure root user cannot log in through SSH
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?PermitRootLogin
+            line: PermitRootLogin no
+          notify: Restart SSH daemon
+
+        - name: Ensure users can try to authenticate only twice
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?MaxAuthTries
+            line: MaxAuthTries 2
+          notify: Restart SSH daemon
 
     - name: Remove host from bootstrap group
       shell: |
