@@ -30,3 +30,6 @@ jobs:
           playbook: ${{ matrix.playbook }}
           key: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
           options: --check
+
+      - name: Remove inventory file
+        run: rm inventory.yml
