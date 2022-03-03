@@ -19,6 +19,12 @@ jobs:
       - name: Checkout files in the repository
         uses: actions/checkout@v2
 
+      - name: Retrieve the inventory from GH secrets
+        env:
+          INVENTORY_B64: ${{ secrets.ANSIBLE_INVENTORY }}
+        run: |
+          echo "$INVENTORY_B64" | base64 -d > inventory.yml
+
       - name: Run playbook in check mode
         uses: dawid6/action-ansible-playbook@v2
         with:
