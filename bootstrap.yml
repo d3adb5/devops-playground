@@ -6,6 +6,7 @@
     ssh_user: "{{ lookup('env', 'ANSIBLE_SSH_USER') }}"
     ssh_port: "{{ lookup('env', 'ANSIBLE_SSH_PORT') }}"
     ssh_key:  "{{ lookup('env', 'ANSIBLE_SSH_KEY') }}"
+    swp_path: "/.swp"
   tasks:
     - name: Ensure ansible user exists
       user:
@@ -106,6 +107,34 @@
             regexp: ^(# *)?MaxAuthTries
             line: MaxAuthTries 2
           notify: Restart SSH daemon
+
+    - name: Ensure specified additional swap is present
+      block:
+        - name: Delete swap file if no additional swap is required
+          when: swap_in_mb == 0
+          shell: |
+            if [ -e {{ swp_path }} ]; then
+              swapoff {{ swp_path }}
+              rm {{ swp_path }}
+            fi
+
+        - name: Create or modify swap file
+          when: swap_in_mb > 0
+          shell: |
+            fallocate -l {{ ((swap_in_mb) | int * 1024 * 1024) }} {{ swp_path }}
+            mkswap {{ swp_path }}
+            swapon {{ swp_path }}
+
+        - name: Ensure swap is mounted through /etc/fstab
+          when: swap_in_mb > 0
+          mount:
+            src: "/.swp"
+            name: "none"
+            fstype: "swap"
+            opts: "sw,nofail"
+            dump: "0"
+            passno: "0"
+            state: "present"
 
     - name: Remove host from bootstrap group
       shell: |
