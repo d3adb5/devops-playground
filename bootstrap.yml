@@ -25,6 +25,19 @@
       apt:
         name: sudo
 
+    - name: Ensure fail2ban is installed and enabled
+      block:
+        - name: Ensure fail2ban is installed (Debian)
+          when: ansible_distribution == "Debian"
+          apt:
+            name: fail2ban
+
+        - name: Ensure fail2ban service is enabled & started
+          service:
+            name: fail2ban
+            enabled: true
+            state: started
+
     - name: Ensure firewall is activated and SSH enabled
       block:
         - name: Ensure firewalld is installed (Debian)
