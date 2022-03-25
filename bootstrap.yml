@@ -123,16 +123,23 @@
 
     - name: Ensure specified additional swap is present
       block:
-        - name: Delete swap file if no additional swap is required
-          when: swap_in_mb == 0
+        - name: Retrieve information about current swap file
+          stat:
+            path: "{{ swp_path }}"
+          register: swapfile
+
+        - name: Delete swap file if additional swap will change
+          when: >
+            (swap_in_mb == 0 and swapfile.stat.exists) or (swapfile.stat.exists
+              and swapfile.stat.size != (swap_in_mb * 1024 * 1024))
           shell: |
-            if [ -e {{ swp_path }} ]; then
-              swapoff {{ swp_path }}
-              rm {{ swp_path }}
-            fi
+            swapoff {{ swp_path }}
+            rm {{ swp_path }}
 
         - name: Create or modify swap file
-          when: swap_in_mb > 0
+          when: >
+            swap_in_mb > 0 and (not swapfile.stat.exists or
+              swapfile.stat.size != (swap_in_mb * 1024 * 1024))
           shell: |
             fallocate -l {{ ((swap_in_mb) | int * 1024 * 1024) }} {{ swp_path }}
             mkswap {{ swp_path }}
