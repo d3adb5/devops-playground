@@ -1,3 +1,9 @@
+variable "enabled" {
+  type        = bool
+  description = "Whether to create any resources."
+  default     = true
+}
+
 variable "cidr_block" {
   type        = string
   description = "CIDR block for the VPC."
