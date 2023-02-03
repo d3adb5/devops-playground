@@ -52,6 +52,37 @@ variable "health_check" {
   }
 }
 
+variable "environment" {
+  type = list(object({
+    name  = string
+    value = string
+  }))
+
+  description = "Environment variables to be made available to the container."
+  default     = []
+}
+
+variable "volumes_from" {
+  type = list(object({
+    sourceContainer = string
+    readOnly        = optional(bool)
+  }))
+
+  description = "Volumes to be mounted from other containers."
+  default     = []
+}
+
+variable "mount_points" {
+  type = list(object({
+    containerPath = string
+    readOnly      = optional(bool)
+    sourceVolume  = string
+  }))
+
+  description = "Mount points for the container."
+  default     = []
+}
+
 variable "container_port" {
   type        = number
   description = "Port on which the container is listening."

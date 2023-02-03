@@ -61,10 +61,14 @@ resource "aws_ecs_task_definition" "default" {
         {
           containerPort = var.container_port
           hostPort      = var.container_port
+          protocol      = "tcp"
         }
       ]
 
-      healthCheck = var.health_check
+      healthCheck = local.health_check
+      environment = var.environment
+      volumesFrom = local.volumes_from
+      mountPoints = local.mount_points
     }
   ])
 
