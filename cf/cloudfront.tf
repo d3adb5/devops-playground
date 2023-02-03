@@ -1,5 +1,5 @@
 locals {
-  origin_id = coalesce(var.domain_name, var.origin_id, random_string.origin_id)
+  origin_id = coalesce(var.domain_name, var.origin_id, random_string.origin_id.result)
 }
 
 # Generate a random Origin ID to make sure it's unique. This is used only if no
