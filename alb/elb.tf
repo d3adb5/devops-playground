@@ -20,10 +20,11 @@ resource "aws_lb_listener" "default" {
 }
 
 resource "aws_lb_target_group" "default" {
-  name     = var.alb_name
-  port     = var.target_port
-  protocol = var.target_protocol
-  vpc_id   = var.vpc_id
+  name        = var.alb_name
+  port        = var.target_port
+  protocol    = var.target_protocol
+  vpc_id      = var.vpc_id
+  target_type = "ip"
 
   health_check {
     healthy_threshold   = 2
