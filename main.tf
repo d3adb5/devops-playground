@@ -49,3 +49,57 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
     }
   }
 }
+
+module "vpc" {
+  enabled = terraform.workspace == "default"
+  source  = "./vpc"
+}
+
+module "alb" {
+  count  = terraform.workspace == "default" ? 0 : 1
+  source = "./alb"
+
+  vpc_id  = module.vpc.vpc_id
+  subnets = module.vpc.public_subnets
+
+  alb_name              = var.project_name
+  alb_health_check_path = "/"
+  alb_port              = 80
+  alb_protocol          = "HTTP"
+
+  target_port     = 80
+  target_protocol = "HTTP"
+}
+
+module "ecs" {
+  count  = terraform.workspace == "default" ? 0 : 1
+  source = "./ecs"
+
+  vpc_id  = module.vpc.vpc_id
+  subnets = module.vpc.private_subnets
+
+  cluster_name         = var.project_name
+  service_name         = var.project_name
+  task_definition_name = var.project_name
+
+  alb_arn              = module.alb[0].alb_arn
+  alb_target_group_arn = module.alb[0].alb_target_group_arn
+
+  image_repository = "nginx"
+  image_tag        = "latest"
+  container_port   = 80
+
+  cpu_in_millicores   = 256
+  memory_in_megabytes = 512
+
+  health_check = {
+    command = split(" ", "curl http://localhost/")
+  }
+}
+
+module "cf" {
+  count  = terraform.workspace == "default" ? 0 : 1
+  source = "./cf"
+
+  alb_dns_name = module.alb[0].alb_dns_name
+}
