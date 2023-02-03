@@ -13,4 +13,11 @@ resource "aws_security_group" "default" {
     protocol        = "tcp"
     security_groups = data.aws_lb.default.security_groups
   }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
