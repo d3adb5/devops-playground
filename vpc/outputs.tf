@@ -3,11 +3,11 @@ output "vpc_id" {
 }
 
 output "public_subnets" {
-  value = var.enabled ? values(aws_subnet.public).*.id : data.aws_subnet.public.*.id
+  value = values(var.enabled ? aws_subnet.public : data.aws_subnet.public).*.id
 }
 
 output "private_subnets" {
-  value = var.enabled ? values(aws_subnet.private).*.id : data.aws_subnet.private.*.id
+  value = values(var.enabled ? aws_subnet.private : data.aws_subnet.private).*.id
 }
 
 # Data sources for when resources aren't being created.
