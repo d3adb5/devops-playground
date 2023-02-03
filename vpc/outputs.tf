@@ -18,11 +18,15 @@ data "aws_vpc" "default" {
 }
 
 data "aws_subnet" "public" {
-  for_each = var.enabled ? {} : local.public_cidr_blocks
-  vpc_id   = data.aws_vpc.default[0].id
+  for_each          = var.enabled ? {} : local.public_cidr_blocks
+  vpc_id            = data.aws_vpc.default[0].id
+  cidr_block        = each.value
+  availability_zone = each.key
 }
 
 data "aws_subnet" "private" {
-  for_each = var.enabled ? {} : local.private_cidr_blocks
-  vpc_id   = data.aws_vpc.default[0].id
+  for_each          = var.enabled ? {} : local.private_cidr_blocks
+  vpc_id            = data.aws_vpc.default[0].id
+  cidr_block        = each.value
+  availability_zone = each.key
 }
