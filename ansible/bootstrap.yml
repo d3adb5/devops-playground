@@ -1,0 +1,175 @@
+---
+- name: Set up servers for Ansible
+  hosts: bootstrap
+  become: yes
+  vars:
+    ssh_user: "{{ lookup('env', 'ANSIBLE_SSH_USER') }}"
+    ssh_port: "{{ lookup('env', 'ANSIBLE_SSH_PORT') }}"
+    ssh_key:  "{{ lookup('env', 'ANSIBLE_SSH_KEY') }}"
+    swp_path: "/.swp"
+  tasks:
+    - name: Ensure ansible user exists
+      user:
+        name: "{{ ssh_user }}"
+        home: "/var/lib/{{ ssh_user }}"
+        system: yes
+
+    - name: Ensure packages are up to date (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Ensure sudo package is installed (Debian)
+      when: ansible_distribution == "Debian"
+      apt:
+        name: sudo
+
+    - name: Ensure fail2ban is installed and enabled
+      block:
+        - name: Ensure fail2ban is installed (Debian)
+          when: ansible_distribution == "Debian"
+          apt:
+            name: fail2ban
+
+        - name: Ensure fail2ban service is enabled & started
+          service:
+            name: fail2ban
+            enabled: true
+            state: started
+
+    - name: Ensure firewall is activated and SSH enabled
+      block:
+        - name: Ensure firewalld is installed (Debian)
+          when: ansible_distribution == "Debian"
+          apt:
+            name: firewalld
+            state: latest
+
+        - name: Ensure configured SSH port is open through firewalld
+          firewalld:
+            port: '{{ ssh_port }}/tcp'
+            permanent: true
+            immediate: true
+            state: enabled
+
+        - name: Ensure firewalld service is enabled & started
+          service:
+            name: firewalld
+            enabled: true
+            state: started
+
+    - name: Ensure ansible user can become root w/o passwd
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ ssh_user }} ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+
+    - name: Ensure sudo group can become root w/o passwd
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^%sudo'
+        line: "%sudo ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+
+    - name: Ensure sudo preserves SSH_AUTH_SOCK
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^Defaults>root'
+        line: "Defaults>root env_keep+=SSH_AUTH_SOCK"
+        validate: "visudo -cf %s"
+
+    - name: Ensure SSH pubkey is authorized for configured user
+      authorized_key:
+        user: "{{ ssh_user }}"
+        key: "{{ ssh_key }}"
+
+    - name: Ensure basic SSH configuration is present
+      block:
+        - name: Ensure SSH daemon listens on configured port
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^Port
+            line: "Port {{ ssh_port }}"
+          notify: Restart SSH daemon
+
+        - name: Ensure password authentication is disabled
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?PasswordAuthentication
+            line: PasswordAuthentication no
+          notify: Restart SSH daemon
+
+        - name: Ensure users with empty passwords can't log in
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?PermitEmptyPasswords
+            line: PermitEmptyPasswords no
+          notify: Restart SSH daemon
+
+        - name: Ensure root user cannot log in through SSH
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?PermitRootLogin
+            line: PermitRootLogin no
+          notify: Restart SSH daemon
+
+        - name: Ensure users can try to authenticate only twice
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^(# *)?MaxAuthTries
+            line: MaxAuthTries 2
+          notify: Restart SSH daemon
+
+    - name: Ensure specified additional swap is present
+      block:
+        - name: Retrieve information about current swap file
+          stat:
+            path: "{{ swp_path }}"
+          register: swapfile
+
+        - name: Delete swap file if additional swap will change
+          when: >
+            (swap_in_mb == 0 and swapfile.stat.exists) or (swapfile.stat.exists
+              and swapfile.stat.size != (swap_in_mb * 1024 * 1024))
+          shell: |
+            swapoff {{ swp_path }}
+            rm {{ swp_path }}
+
+        - name: Create or modify swap file
+          when: >
+            swap_in_mb > 0 and (not swapfile.stat.exists or
+              swapfile.stat.size != (swap_in_mb * 1024 * 1024))
+          shell: |
+            fallocate -l {{ ((swap_in_mb) | int * 1024 * 1024) }} {{ swp_path }}
+            mkswap {{ swp_path }}
+            swapon {{ swp_path }}
+
+        - name: Ensure swap is mounted through /etc/fstab
+          when: swap_in_mb > 0
+          mount:
+            src: "/.swp"
+            name: "none"
+            fstype: "swap"
+            opts: "sw,nofail"
+            dump: "0"
+            passno: "0"
+            state: "present"
+
+    - name: Remove host from bootstrap group
+      shell: |
+        vars='{"ansible_user":"{{ ssh_user }}","ansible_port":{{ ssh_port }}}'
+        addExpr=".all.hosts.{{ inventory_hostname }} += $vars"
+        delExpr='del(.all.children.bootstrap.hosts.{{ inventory_hostname }})'
+        yq -y "$addExpr" {{ inventory_file }} > {{ inventory_file }}.tmp
+        yq -y "$delExpr" {{ inventory_file }}.tmp > {{ inventory_file }}
+        rm {{ inventory_file }}.tmp
+      delegate_to: 127.0.0.1
+      become: no
+      throttle: 1
+
+  handlers:
+    - name: Restart SSH daemon
+      service:
+        name: sshd
+        state: restarted

@@ -1,0 +1,111 @@
+---
+- name: Ensure users are present in the target host
+  hosts: all
+  become: yes
+  vars:
+    current_users: []
+    desired_users: []
+  tasks:
+    - name: Ensure awk is installed (it's helpful!)
+      apt:
+        name: gawk
+        update_cache: yes
+
+    - name: Determine users with a login shell in the host
+      shell: "grep -v nologin /etc/passwd | awk -F: '{if ($3>=1000) print $1}'"
+      register: current_users_list
+      changed_when: no
+
+    - name: Compile list of users from last task (current users)
+      with_items: "{{ current_users_list.stdout_lines }}"
+      set_fact:
+        current_users: "{{ current_users + [ item ] }}"
+
+    - name: Determine users that should be present in the host
+      shell: 'find users -type f | xargs -n 1 basename | sed "s/.pub$//"'
+      delegate_to: 127.0.0.1
+      register: users_to_add
+      changed_when: no
+      become: no
+
+    - name: Compile list of users from last task (desired users)
+      with_items: "{{ users_to_add.stdout_lines }}"
+      set_fact:
+        desired_users: "{{ desired_users + [ item ] }}"
+
+    - name: Ensure desired users are present
+      with_items: "{{ desired_users }}"
+      user:
+        name: "{{ item }}"
+        shell: /bin/zsh
+
+    - name: Ensure leftover users are removed
+      with_items: "{{ current_users | difference(desired_users) }}"
+      user:
+        name: "{{ item }}"
+        state: absent
+        remove: yes
+
+    - name: Ensure desired users can log in
+      with_items: "{{ desired_users }}"
+      authorized_key:
+        user: "{{ item }}"
+        key: "{{ lookup('file', 'users/{{ item }}.pub') }}"
+
+    - name: Ensure desired users have global tooling config
+      block:
+        - name: Ensure dotfiles clone is present in /opt/dotfiles
+          git:
+            dest: /opt/dotfiles
+            repo: https://github.com/d3adb5/dotfiles
+
+        - name: Ensure link to global zshrc exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.zshrc
+            src: /opt/dotfiles/zsh/zshrc
+            state: link
+
+        - name: Ensure .config directory exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.config
+            owner: "{{ item }}"
+            group: "{{ item }}"
+            mode: 0755
+            state: directory
+
+        - name: Ensure link to global zsh conf dir exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.config/zsh
+            src: /opt/dotfiles/zsh/conf.d
+            state: link
+
+        - name: Ensure TPM clone is present in /opt/tpm
+          git:
+            dest: /opt/tpm
+            repo: https://github.com/tmux-plugins/tpm
+
+        - name: Ensure link to global tmux.conf exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.tmux.conf
+            src: /opt/dotfiles/tmux/tmux.conf
+            state: link
+
+        - name: Ensure .tmux/plugins directory exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.tmux/plugins
+            owner: "{{ item }}"
+            group: "{{ item }}"
+            mode: 0755
+            state: directory
+
+        - name: Ensure link to global TPM clone exists in user's home
+          with_items: "{{ desired_users }}"
+          file:
+            path: /home/{{ item }}/.tmux/plugins/tpm
+            src: /opt/tpm
+            state: link
