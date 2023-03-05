@@ -52,3 +52,22 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate
+
+  tfsec:
+    name: tfsec
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: find
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.find.outputs.projects) }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v3
+
+      - name: Scan project with tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform/${{ matrix.project }}
