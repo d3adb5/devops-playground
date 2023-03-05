@@ -21,9 +21,10 @@ jobs:
       - id: find
         name: Find Terraform projects
         run: |
-          find . -type f -name '*.tf' -exec dirname {} \; | sort -u > found
-          projects=$(jq --null-input -c '$ARGS.positional' --args $(cat found))
-          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          find terraform -maxdepth 2 -type f -name '*.tf' -exec dirname {} \; \
+            | sort -u | xargs -l basename > found.txt
+          echo "projects=$(jq -nc '$ARGS.positional' --args $(cat found.txt))" \
+            >> "$GITHUB_OUTPUT"
 
   validate:
     name: Validate
@@ -37,7 +38,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ${{ matrix.project }}
+        working-directory: terraform/${{ matrix.project }}
 
     steps:
       - name: Checkout files in the repository
