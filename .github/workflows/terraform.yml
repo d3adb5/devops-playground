@@ -1,0 +1,74 @@
+name: Terraform
+
+on:
+  pull_request: {}
+  push:
+    branches: [ master ]
+
+jobs:
+  find:
+    name: Find Terraform Projects
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    outputs:
+      projects: ${{ steps.find.outputs.projects }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v3
+
+      - id: find
+        name: Find Terraform projects
+        run: |
+          find terraform -maxdepth 2 -type f -name '*.tf' -exec dirname {} \; \
+            | sort -u | xargs -l basename > found.txt
+          echo "projects=$(jq -nc '$ARGS.positional' --args $(cat found.txt))" \
+            >> "$GITHUB_OUTPUT"
+
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: find
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.find.outputs.projects) }}
+
+    defaults:
+      run:
+        working-directory: terraform/${{ matrix.project }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v3
+
+      - name: Validate Terraform project
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+  tfsec:
+    name: tfsec
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: find
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.find.outputs.projects) }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v3
+
+      - name: Scan project with tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform/${{ matrix.project }}
+          additional_args: --exclude-downloaded-modules

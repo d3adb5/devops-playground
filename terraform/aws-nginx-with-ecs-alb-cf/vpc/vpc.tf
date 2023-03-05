@@ -1,3 +1,4 @@
+# tfsec:ignore:aws-ec2-require-vpc-flow-logs-for-all-vpcs
 resource "aws_vpc" "default" {
   count      = var.enabled ? 1 : 0
   cidr_block = var.cidr_block
