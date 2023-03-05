@@ -1,0 +1,53 @@
+name: Terraform
+
+on:
+  pull_request: {}
+  push:
+    branches: [ master ]
+
+jobs:
+  find:
+    name: Find Terraform Projects
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    outputs:
+      projects: ${{ steps.find.outputs.projects }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v3
+
+      - id: find
+        name: Find Terraform projects
+        run: |
+          find . -type f -name '*.tf' -exec dirname {} \; | sort -u > found
+          projects=$(jq --null-input -c '$ARGS.positional' --args $(cat found))
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: find
+
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.find.outputs.projects) }}
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+
+    steps:
+      - name: Checkout files in the repository
+        uses: actions/checkout@v3
+
+      - name: Validate Terraform project
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
