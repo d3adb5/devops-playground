@@ -20,14 +20,20 @@ provider "aws" {
 }
 
 module "tfstate_backend" {
-  count  = terraform.workspace == "default" ? 1 : 0
-  source = "github.com/d3adb5/terraform-aws-tfstate-backend?ref=v1.2.0"
-  # ^ Switch to upstream once changes have been merged.
+  count   = terraform.workspace == "default" ? 1 : 0
+  source  = "binbashar/tfstate-backend/aws"
+  version = "1.0.26"
 
   restrict_public_buckets = true
   ignore_public_acls      = true
   block_public_acls       = true
   block_public_policy     = true
+
+  enable_point_in_time_recovery = false
+  bucket_replication_enabled    = false
+  notifications_sns             = false
+  create_kms_key                = false
+  billing_mode                  = "PROVISIONED"
 
   namespace = "d3adb5"
   stage     = "private-backup"
