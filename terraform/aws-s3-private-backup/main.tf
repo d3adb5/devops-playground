@@ -61,15 +61,26 @@ module "backup_bucket" {
     enabled = true
   }
 
-  lifecycle_rule = [{
-    id      = "intelligent-tiering"
-    enabled = true
+  lifecycle_rule = [
+    {
+      id      = "glacier-instant-retrieval"
+      enabled = true
 
-    transition = [{
-      days          = 0
-      storage_class = "INTELLIGENT_TIERING"
-    }]
-  }]
+      transition = [{
+        days          = 0
+        storage_class = "GLACIER_IR"
+      }]
+    },
+    {
+      id      = "glacier-flexible-retrieval-for-old-versions"
+      enabled = true
+
+      noncurrent_version_transition = [{
+        days          = 120
+        storage_class = "GLACIER"
+      }]
+    }
+  ]
 
   intelligent_tiering = {
     default = {
