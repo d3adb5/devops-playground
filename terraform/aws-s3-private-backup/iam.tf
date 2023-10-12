@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "bucket_access" {
 resource "aws_iam_openid_connect_provider" "github_actions" {
   count           = terraform.workspace == "default" ? 1 : 0
   url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["token.actions.githubusercontent.com"]
+  client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["1b511abead59c6ce207077c0bf0e0043b1382612"]
 }
 
