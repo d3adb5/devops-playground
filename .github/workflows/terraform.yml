@@ -32,6 +32,9 @@ jobs:
     timeout-minutes: 5
     needs: find
 
+    permissions:
+      id-token: write
+
     strategy:
       matrix:
         project: ${{ fromJson(needs.find.outputs.projects) }}
@@ -46,6 +49,12 @@ jobs:
 
       - name: Validate Terraform project
         uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS credentials (read-only)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_READONLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         run: terraform init
