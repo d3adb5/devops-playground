@@ -5,7 +5,6 @@ terraform {
     key            = "terraform.tfstate"
     dynamodb_table = "d3adb5-private-backup-tfstate"
     profile        = ""
-    role_arn       = ""
     encrypt        = "true"
   }
 }

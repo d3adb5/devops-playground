@@ -39,9 +39,6 @@ module "tfstate_backend" {
   stage     = "private-backup"
   name      = "tfstate"
 
-  backend_config_filepath = "."
-  backend_config_filename = "backend.tf"
-
   providers = {
     aws.primary   = aws
     aws.secondary = aws.secondary
